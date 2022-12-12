@@ -45,7 +45,7 @@ def pytorch_id(node):
     return node.scopeName() + "/outputs/" + "/".join(["{}".format(o.unique()) for o in node.outputs()])
 
 
-def get_shape(torch_node):
+def get_shape_old(torch_node):
     """Return the output shape of the given Pytorch node."""
     # Extract node output shape from the node string representation
     # This is a hack because there doesn't seem to be an official way to do it.
@@ -59,6 +59,13 @@ def get_shape(torch_node):
         shape = shape.split(",")
         shape = tuple(map(int, shape))
     else:
+        shape = None
+    return shape
+
+def get_shape(torch_node):
+    try:
+        shape = torch_node.output().type().sizes()
+    except:
         shape = None
     return shape
 
