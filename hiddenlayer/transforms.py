@@ -19,11 +19,19 @@ from . import ge
 ###########################################################################
 
 class Fold():
-    def __init__(self, pattern, op, name=None):
+    def __init__(self, pattern, op, name=None, append_shape: bool = False):
         # TODO: validate that op and name are valid
         self.pattern = ge.GEParser(pattern).parse()
         self.op = op
         self.name = name
+        self.append_shape = append_shape
+    
+    @staticmethod
+    def set_output_shape(node, output_shape_str: str):
+        if output_shape_str != '':
+            node.output_shape = output_shape_str
+        return node
+        
 
     def apply(self, graph):
         # Copy the graph. Don't change the original.
@@ -33,18 +41,23 @@ class Fold():
             matches, _ = graph.search(self.pattern)
             if not matches:
                 break
-
+            
+            output_shape_str = ''
+            if self.append_shape:
+                output_shape_str = "&rarr;".join(filter(None, [str(l.output_shape) for l in matches]))
             # Replace pattern with new node
+            
             if self.op == "__first__":
-                combo = matches[0]
+                combo = matches[0] 
             elif self.op == "__last__":
                 combo = matches[-1]
             else:
                 combo = Node(uid=graph.sequence_id(matches),
                                 name=self.name or " &gt; ".join([l.title for l in matches]),
-                                op=self.op or self.pattern,
+                                op=self.op or self.pattern, 
                                 output_shape=matches[-1].output_shape)
                 combo._caption = "/".join(filter(None, [l.caption for l in matches]))
+            combo = self.set_output_shape(combo, output_shape_str)
             graph.replace(matches, combo)
         return graph
 

@@ -22,9 +22,9 @@ THEMES = {
         "outline_color": "#000000",
         "font_color": "#000000",
         "font_name": "Times",
-        "font_size": "10",
+        "font_size": "9",
         "margin": "0,0",
-        "padding":  "1.0,0.5",
+        "padding":  "0.2,0.2",
     },
     "blue": {
         "background_color": "#FFFFFF",
@@ -32,9 +32,10 @@ THEMES = {
         "outline_color": "#7C96BC",
         "font_color": "#202020",
         "font_name": "Verdana",
-        "font_size": "10",
+        "font_size": "9",
         "margin": "0,0",
-        "padding":  "1.0,0.5",
+        "padding":  "0.2,0.2",
+        "len": "1.0",
     },
 }
 
@@ -71,8 +72,8 @@ class Node():
         self.op = op
         self.repeat = 1
         if output_shape:
-            assert isinstance(output_shape, (tuple, list)),\
-            "output_shape must be a tuple or list but received {}".format(type(output_shape))
+            assert isinstance(output_shape, (tuple, list, str)),\
+            "output_shape must be a tuple, list or str but received {}".format(type(output_shape))
         self.output_shape = output_shape
         self.params = params if params else {}
         self._caption = ""
@@ -308,11 +309,15 @@ class Graph():
         else:
             return getrandbits(64)
 
-    def build_dot(self):
+    def build_dot(self, orientation:str="TD"):
         """Generate a GraphViz Dot graph.
 
         Returns a GraphViz Digraph object.
         """
+        
+        if orientation not in ["TD", "LR"]:
+            raise ValueError
+        
         from graphviz import Digraph
 
         # Build GraphViz Digraph
@@ -324,8 +329,9 @@ class Graph():
                  fontcolor=self.theme["font_color"],
                  fontname=self.theme["font_name"],
                  margin=self.theme["margin"],
-                 rankdir="TD",
-                 pad=self.theme["padding"])
+                 rankdir=orientation,
+                 pad=self.theme["padding"],
+                 ranksep="0.2")
         dot.attr("node", shape="box", 
                  style="filled", margin="0,0",
                  fillcolor=self.theme["fill_color"],
@@ -340,18 +346,26 @@ class Graph():
                  fontname=self.theme["font_name"])
 
         for k, n in self.nodes.items():
-            label = "<tr><td cellpadding='6'>{}</td></tr>".format(n.title)
+            #label = n.title
+            if n.caption:
+                label = f"{label}{n.caption}"
+            if n.repeat > 1:
+                label = f"{label}x{n.repeat}"
+            label = "<tr><td cellpadding='0'>{}</td></tr>".format(n.title)
             if n.caption:
                 label += "<tr><td>{}</td></tr>".format(n.caption)
             if n.repeat > 1:
-                label += "<tr><td align='right' cellpadding='2'>x{}</td></tr>".format(n.repeat)
+                label += f"<tr><td align='right' cellpadding='0' >x{n.repeat}</td></tr>"
+            label += f"<tr><td align='left' cellpadding='0' >{n.output_shape}</td></tr>"
             label = "<<table border='0' cellborder='0' cellpadding='0'>" + label + "</table>>"
+            #label = f"{label}\\n{n.output_shape}"
+            
             dot.node(str(k), label)
         for a, b, label in self.edges:
-            if isinstance(label, (list, tuple)):
-                label = "x".join([str(l or "?") for l in label])
+            #if isinstance(label, (list, tuple)):
+            #    label = "x".join([str(l or "?") for l in label])
 
-            dot.edge(str(a), str(b), label)
+            dot.edge(str(a), str(b))
         return dot
 
     def _repr_svg_(self):

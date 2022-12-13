@@ -83,10 +83,13 @@ def import_graph(hl_graph, model, args, input_names=None, verbose=False):
 
     # Loop through nodes and build HL graph
     for torch_node in torch_graph.nodes():
+
         # Op
         op = torch_node.kind()
+        if op == 'prim::Constant': continue
         # Parameters
         params = {k: torch_node[k] for k in torch_node.attributeNames()} 
+        
         # Inputs/outputs
         # TODO: inputs = [i.unique() for i in node.inputs()]
         outputs = [o.unique() for o in torch_node.outputs()]
@@ -101,4 +104,6 @@ def import_graph(hl_graph, model, args, input_names=None, verbose=False):
             target_inputs = [i.unique() for i in target_torch_node.inputs()]
             if set(outputs) & set(target_inputs):
                 hl_graph.add_edge_by_id(pytorch_id(torch_node), pytorch_id(target_torch_node), shape)
+            if op == 'prim::Constant': continue
+
     return hl_graph
