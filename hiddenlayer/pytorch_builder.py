@@ -46,7 +46,7 @@ def pytorch_id(node):
 
 
 def get_shape_old(torch_node):
-    """Return the output shape of the given Pytorch node."""
+    
     # Extract node output shape from the node string representation
     # This is a hack because there doesn't seem to be an official way to do it.
     # See my quesiton in the PyTorch forum:
@@ -62,15 +62,18 @@ def get_shape_old(torch_node):
         shape = None
     return shape
 
-def get_shape(torch_node):
+def get_shape(torch_node, ignore_batch_size: bool = False):
+    """Return the output shape of the given Pytorch node."""
     try:
         shape = torch_node.output().type().sizes()
+        if ignore_batch_size: 
+            shape = shape[1:]
     except:
         shape = None
     return shape
 
 
-def import_graph(hl_graph, model, args, input_names=None, verbose=False):
+def import_graph(hl_graph, model, args, input_names=None, ignore_batch_size=False, verbose=False):
     # TODO: add input names to graph
 
     # Run the Pytorch graph to get a trace and generate a graph from it
@@ -94,7 +97,7 @@ def import_graph(hl_graph, model, args, input_names=None, verbose=False):
         # TODO: inputs = [i.unique() for i in node.inputs()]
         outputs = [o.unique() for o in torch_node.outputs()]
         # Get output shape
-        shape = get_shape(torch_node)
+        shape = get_shape(torch_node, ignore_batch_size=ignore_batch_size)
         # Add HL node
         hl_node = Node(uid=pytorch_id(torch_node), name=None, op=op, 
                        output_shape=shape, params=params)

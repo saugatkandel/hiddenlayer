@@ -132,7 +132,8 @@ class Node():
 ###########################################################################
 
 def build_graph(model=None, args=None, input_names=None,
-                transforms="default", framework_transforms="default"):
+                transforms="default", framework_transforms="default",
+                ignore_batch_size: bool = False):
     # Initialize an empty graph
     g = Graph()
 
@@ -141,10 +142,10 @@ def build_graph(model=None, args=None, input_names=None,
     if framework == "torch":
         from .pytorch_builder import import_graph, FRAMEWORK_TRANSFORMS
         assert args is not None, "Argument args must be provided for Pytorch models."
-        import_graph(g, model, args)
+        import_graph(g, model, args, ignore_batch_size=ignore_batch_size)
     elif framework == "tensorflow":
         from .tf_builder import import_graph, FRAMEWORK_TRANSFORMS
-        import_graph(g, model)
+        import_graph(g, model, ignore_batch_size)
     else:
         raise ValueError("`model` input param must be a PyTorch, TensorFlow, or Keras-with-TensorFlow-backend model.") 
 
